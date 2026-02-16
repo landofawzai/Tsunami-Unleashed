@@ -160,11 +160,15 @@ distribution-dashboard/
 - Database seeding
 - Basic home page
 
-🔜 **Session 2**: Webhook API layer
+✅ **Session 2**: Webhook API layer (COMPLETE)
 - POST /api/webhooks/content-posted
 - POST /api/webhooks/content-failed
 - API key authentication
 - Auto-completion logic
+- Platform health monitoring
+- Tier capacity tracking
+- Alert generation
+- Pipeline metrics updates
 
 🔜 **Session 3**: Dashboard layout & pipeline overview
 - Real-time stats cards
@@ -185,11 +189,25 @@ distribution-dashboard/
 
 ## Integration with Pabbly Connect
 
-The dashboard receives data via webhook endpoints triggered by Pabbly workflows:
+The dashboard receives data via webhook endpoints triggered by Pabbly workflows.
 
-### Webhook Events
-- `content-posted` - Fires when content successfully posts to a platform
-- `content-failed` - Fires when a platform post fails
+### Webhook Endpoints
+
+**POST /api/webhooks/content-posted**
+- Records successful platform posts
+- Auto-increments platformsCompleted
+- Updates platform health status
+- Triggers auto-completion when all platforms done
+- Updates tier capacity and daily metrics
+
+**POST /api/webhooks/content-failed**
+- Records failed platform posts
+- Creates alerts for failures
+- Tracks failure counts (24h)
+- Updates platform health to degraded/down
+- Maintains pipeline metrics accuracy
+
+**See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for complete webhook specs**
 
 ### Data Flow
 1. Content is published (Pillar 1 or 2)
@@ -199,6 +217,7 @@ The dashboard receives data via webhook endpoints triggered by Pabbly workflows:
 5. Dashboard updates ContentItem, DistributionLog, PlatformHealth
 6. Auto-completion logic checks if all platforms complete
 7. Metrics aggregated for daily rollup
+8. Alerts generated for failures (≥5 in 24h)
 
 ---
 
