@@ -1,0 +1,37 @@
+{
+  "name": "distribution-dashboard",
+  "version": "1.0.0",
+  "description": "Distribution Dashboard for Tsunami Unleashed - 4-Tier Distribution Monitoring",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "db:seed": "node prisma/seed.js"
+  },
+  "keywords": [
+    "distribution",
+    "automation",
+    "ministry",
+    "dashboard"
+  ],
+  "author": "Tsunami Unleashed",
+  "license": "CC0-1.0",
+  "dependencies": {
+    "@prisma/client": "5.22.0",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "swr": "^2.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "prisma": "5.22.0",
+    "typescript": "^5.9.3"
+  }
+}

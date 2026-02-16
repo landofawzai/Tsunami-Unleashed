@@ -1,0 +1,144 @@
+// Tsunami Unleashed Distribution Dashboard
+// Database Schema for 4-Tier Distribution Tracking
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Model 1: ContentItem - Tracks content through the distribution pipeline
+model ContentItem {
+  id                  String   @id @default(cuid())
+  contentId           String   @unique // Follows content across all pillars
+  title               String
+  contentType         String   // video, audio, article, image, etc.
+  tier                Int      // 1, 2, or 3 (Tier 4 excluded by design)
+  platformsTargeted   Int      // Total platforms planned
+  platformsCompleted  Int      @default(0) // Auto-increments via webhooks
+  status              String   @default("pending") // pending, in_progress, completed, failed
+  sourceUrl           String?  // Original content location
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  completedAt         DateTime?
+
+  // Relations
+  distributionLogs    DistributionLog[]
+
+  @@index([contentId])
+  @@index([status])
+  @@index([tier])
+}
+
+// Model 2: DistributionLog - Audit trail for each platform post
+model DistributionLog {
+  id                String   @id @default(cuid())
+  contentItemId     String
+  platform          String   // YouTube, Facebook, RSS, etc.
+  tier              Int      // 1, 2, or 3
+  managementTool    String   // Followr, Pabbly, Robomotion, RSSground
+  status            String   // success, failed, pending
+  platformPostId    String?  // Platform's native post ID
+  postUrl           String?  // Direct link to post
+  errorMessage      String?
+  metadata          String?  // JSON string for additional data
+  postedAt          DateTime @default(now())
+
+  // Relations
+  contentItem       ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+
+  @@index([contentItemId])
+  @@index([platform])
+  @@index([status])
+  @@index([tier])
+}
+
+// Model 3: PlatformHealth - Real-time platform status monitoring
+model PlatformHealth {
+  id                String   @id @default(cuid())
+  platform          String   @unique // YouTube, Facebook, RSS, etc.
+  tier              Int      // 1, 2, or 3
+  status            String   @default("healthy") // healthy, degraded, down
+  lastSuccessfulPost DateTime?
+  lastFailedPost    DateTime?
+  failureCount24h   Int      @default(0)
+  responseTimeMs    Int?     // API response time
+  managementTool    String   // Which tool manages this platform
+  lastChecked       DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([platform])
+  @@index([status])
+}
+
+// Model 4: RssFeed - Tier-specific feed tracking
+model RssFeed {
+  id                String   @id @default(cuid())
+  feedUrl           String   @unique
+  feedName          String
+  tier              Int      // 1 or 2 (RSS-specific)
+  language          String?  // For Tier 1 language-specific feeds
+  subscriberCount   Int      @default(0)
+  isActive          Boolean  @default(true)
+  managementTool    String   // RSSground or Ghost/Cloudflare
+  lastPublished     DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([tier])
+  @@index([isActive])
+}
+
+// Model 5: TierCapacity - Tier 1 slots (150 limit) vs Tier 2 (unlimited)
+model TierCapacity {
+  id                String   @id @default(cuid())
+  tier              Int      @unique // 1, 2, or 3
+  totalSlots        Int      // 150 for Tier 1, -1 for unlimited
+  usedSlots         Int      @default(0)
+  reservedSlots     Int      @default(0) // 50 reserved for emerging languages in Tier 1
+  availableSlots    Int      // Computed: totalSlots - usedSlots - reservedSlots
+  updatedAt         DateTime @updatedAt
+
+  @@index([tier])
+}
+
+// Model 6: Alert - Auto-generated alerts for failures/warnings
+model Alert {
+  id                String   @id @default(cuid())
+  severity          String   // info, warning, error, critical
+  category          String   // platform_failure, capacity_warning, system_error
+  message           String
+  details           String?  // JSON string with additional context
+  relatedContentId  String?  // Link to ContentItem if applicable
+  relatedPlatform   String?
+  isRead            Boolean  @default(false)
+  isResolved        Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  resolvedAt        DateTime?
+
+  @@index([severity])
+  @@index([isRead])
+  @@index([isResolved])
+  @@index([createdAt])
+}
+
+// Model 7: PipelineMetric - Daily rollup with tier breakdowns
+model PipelineMetric {
+  id                String   @id @default(cuid())
+  date              DateTime @unique // Daily metrics
+  tier1Posts        Int      @default(0)
+  tier2Posts        Int      @default(0)
+  tier3Posts        Int      @default(0)
+  totalPosts        Int      @default(0)
+  successfulPosts   Int      @default(0)
+  failedPosts       Int      @default(0)
+  successRate       Float    @default(0.0) // Percentage
+  avgResponseTimeMs Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([date])
+}
