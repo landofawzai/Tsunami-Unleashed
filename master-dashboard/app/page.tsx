@@ -265,6 +265,7 @@ export default function HomePage() {
                 key={p.id}
                 pillar={p}
                 stats={pillars[p.id]}
+                metrics={getPillarMetrics(p.id, pillars[p.id]?.data)}
               />
             ))}
           </div>
@@ -340,6 +341,59 @@ export default function HomePage() {
       </div>
     </main>
   )
+}
+
+function getPillarMetrics(
+  id: string,
+  data: Record<string, unknown> | null | undefined
+): { label: string; value: string | number }[] {
+  if (!data) return []
+
+  switch (id) {
+    case 'creation':
+      return [
+        { label: 'Total Content', value: Number(data.totalContent ?? 0) },
+        { label: 'In Production', value: Number(data.inProduction ?? 0) },
+        { label: 'Pending Review', value: Number(data.pendingReviews ?? 0) },
+        { label: 'Sent', value: Number(data.totalSent ?? 0) },
+      ]
+    case 'repurposing': {
+      const sources = (data.sources || {}) as Record<string, number>
+      const derivatives = (data.derivatives || {}) as Record<string, number>
+      const translations = (data.translations || {}) as Record<string, number>
+      const jobs = (data.jobs || {}) as Record<string, number>
+      return [
+        { label: 'Sources', value: sources.total ?? 0 },
+        { label: 'Derivatives', value: derivatives.total ?? 0 },
+        { label: 'Translations', value: translations.total ?? 0 },
+        { label: 'Processing', value: jobs.processing ?? 0 },
+      ]
+    }
+    case 'distribution': {
+      const today = (data.today || {}) as Record<string, number>
+      const content = (data.content || {}) as Record<string, number>
+      const platforms = (data.platforms || {}) as Record<string, number>
+      return [
+        { label: 'Posts Today', value: today.posts ?? 0 },
+        { label: 'Success Rate', value: today.successRate != null ? `${today.successRate}%` : '—' },
+        { label: 'Active', value: content.active ?? 0 },
+        { label: 'Platforms', value: platforms.healthy != null ? `${platforms.healthy}/${platforms.total}` : '—' },
+      ]
+    }
+    case 'communication': {
+      const today = (data.today || {}) as Record<string, number>
+      const contacts = (data.contacts || {}) as Record<string, number>
+      const campaigns = (data.campaigns || {}) as Record<string, number>
+      return [
+        { label: 'Sent Today', value: today.messagesSent ?? 0 },
+        { label: 'Delivery', value: today.deliveryRate != null ? `${today.deliveryRate}%` : '—' },
+        { label: 'Contacts', value: contacts.active ?? 0 },
+        { label: 'Campaigns', value: campaigns.total ?? 0 },
+      ]
+    }
+    default:
+      return []
+  }
 }
 
 function PipelineStage({

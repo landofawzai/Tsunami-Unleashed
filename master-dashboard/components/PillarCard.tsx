@@ -9,12 +9,18 @@ interface PillarStats {
   data: Record<string, unknown> | null
 }
 
+interface PillarMetric {
+  label: string
+  value: string | number
+}
+
 interface PillarCardProps {
   pillar: PillarConfig
   stats?: PillarStats
+  metrics?: PillarMetric[]
 }
 
-export function PillarCard({ pillar, stats }: PillarCardProps) {
+export function PillarCard({ pillar, stats, metrics }: PillarCardProps) {
   const isNotBuilt = !pillar.enabled
   const isDown = stats?.status === 'down'
   const isUp = stats?.status === 'up'
@@ -35,12 +41,12 @@ export function PillarCard({ pillar, stats }: PillarCardProps) {
         </div>
       </div>
 
-      {pillar.enabled && stats?.data && (
+      {pillar.enabled && metrics && metrics.length > 0 && (
         <div className="pillar-metrics">
-          {Object.entries(stats.data).slice(0, 4).map(([key, value]) => (
-            <div key={key} className="metric">
-              <span className="metric-value">{String(value)}</span>
-              <span className="metric-label">{formatKey(key)}</span>
+          {metrics.map((m, i) => (
+            <div key={i} className="metric">
+              <span className="metric-value">{m.value}</span>
+              <span className="metric-label">{m.label}</span>
             </div>
           ))}
         </div>
