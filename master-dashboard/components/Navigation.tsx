@@ -53,41 +53,48 @@ export function Navigation() {
           <NavLink href="/settings" label="Settings" />
 
           <span
+            className="nav-pillar-links"
             style={{
-              width: '1px',
-              height: '24px',
-              background: 'rgba(255,255,255,0.3)',
-              margin: '0 0.25rem',
+              alignItems: 'center',
             }}
-          />
-
-          {ENABLED_PILLARS.map((p) => (
-            <a
-              key={p.id}
-              href={p.externalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+          >
+            <span
               style={{
-                color: 'white',
-                textDecoration: 'none',
-                padding: '0.5rem 0.75rem',
-                borderRadius: '6px',
-                fontSize: '0.75rem',
-                fontWeight: 500,
-                background: 'rgba(255, 255, 255, 0.05)',
-                borderLeft: `3px solid ${p.color}`,
-                transition: 'background 0.2s',
+                width: '1px',
+                height: '24px',
+                background: 'rgba(255,255,255,0.3)',
+                margin: '0 0.25rem',
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
-              }}
-            >
-              P{p.number}
-            </a>
-          ))}
+            />
+
+            {ENABLED_PILLARS.map((p) => (
+              <a
+                key={p.id}
+                href={p.externalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: 'white',
+                  textDecoration: 'none',
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '6px',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  borderLeft: `3px solid ${p.color}`,
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
+                }}
+              >
+                P{p.number}
+              </a>
+            ))}
+          </span>
         </div>
       </div>
     </nav>

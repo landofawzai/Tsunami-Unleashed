@@ -157,7 +157,7 @@ export default function PipelinePage() {
   const pillars = statsData?.pillars || {}
 
   return (
-    <main style={{ maxWidth: '1000px', margin: '0 auto', padding: '2rem' }}>
+    <main style={{ maxWidth: '1000px', margin: '0 auto', padding: '1rem' }}>
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.25rem' }}>
           Pipeline Flow
@@ -361,7 +361,7 @@ export default function PipelinePage() {
       {/* Pillar Legend */}
       <div style={{ marginTop: '2rem' }}>
         <Card title="Pillar Legend">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+          <div className="grid-legend">
             {ENABLED_PILLARS.map((p) => (
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <div

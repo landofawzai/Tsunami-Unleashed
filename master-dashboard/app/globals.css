@@ -30,3 +30,125 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+/* Responsive grid helpers */
+.grid-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.grid-pipeline-flow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.grid-pipeline-arrows {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.grid-main-layout {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.grid-pillar-overview {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.grid-settings-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.grid-planned-pillars {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.grid-legend {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.nav-pillar-links {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.endpoint-desc {
+  color: #9ca3af;
+  font-size: 0.75rem;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .grid-pipeline-flow {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .grid-pipeline-arrows {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .grid-main-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-pillar-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-settings-2col {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-planned-pillars {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-legend {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .nav-pillar-links {
+    display: none;
+  }
+
+  .endpoint-desc {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid-pipeline-flow {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-pipeline-arrows {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-stats {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .grid-legend {
+    grid-template-columns: 1fr;
+  }
+}

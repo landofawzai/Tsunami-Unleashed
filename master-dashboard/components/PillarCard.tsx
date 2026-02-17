@@ -158,7 +158,7 @@ export function PillarCard({ pillar, stats, metrics }: PillarCardProps) {
         }
         .pillar-metrics {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(2, 1fr);
           gap: 0.5rem;
           padding: 0 1.25rem 1rem;
         }

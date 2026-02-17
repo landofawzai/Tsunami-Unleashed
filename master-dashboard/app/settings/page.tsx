@@ -13,7 +13,7 @@ export default function SettingsPage() {
   const pillarsHealth = healthData?.pillars || {}
 
   return (
-    <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
+    <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '1rem' }}>
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.25rem' }}>
           Settings
@@ -164,7 +164,7 @@ Integration: Pillars communicate via Google Drive (filesystem) + Pabbly Connect 
       </div>
 
       {/* System Info */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1.5rem' }}>
+      <div className="grid-settings-2col">
         <Card title="System Info">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <InfoRow label="Server" value="Hetzner VPS — 5.78.183.112" />
@@ -230,7 +230,7 @@ Integration: Pillars communicate via Google Drive (filesystem) + Pabbly Connect 
       {PLACEHOLDER_PILLARS.length > 0 && (
         <div style={{ marginTop: '1.5rem' }}>
           <Card title="Planned Pillars" subtitle="Reserved ports and feature plans">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+            <div className="grid-planned-pillars">
               {PLACEHOLDER_PILLARS.map((p) => (
                 <div
                   key={p.id}
@@ -288,7 +288,7 @@ Integration: Pillars communicate via Google Drive (filesystem) + Pabbly Connect 
       {/* Integration Notes */}
       <div style={{ marginTop: '1.5rem' }}>
         <Card title="Integration Standard">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div className="grid-settings-2col" style={{ marginTop: 0 }}>
             <div>
               <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#111827', marginBottom: '0.5rem' }}>
                 Communication Layer

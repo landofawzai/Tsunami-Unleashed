@@ -24,7 +24,7 @@ export default function HomePage() {
   const communicationData = pillars.communication?.data
 
   return (
-    <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
+    <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '1rem 1rem', }}> {/* responsive padding */}
       {/* Header */}
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.25rem' }}>
@@ -77,14 +77,7 @@ export default function HomePage() {
       </Card>
 
       {/* Quick Stats */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '1rem',
-          marginTop: '1.5rem',
-        }}
-      >
+      <div className="grid-stats">
         <StatCard
           label="Total Content"
           value={creationData?.totalContent ?? '—'}
@@ -126,14 +119,7 @@ export default function HomePage() {
       {/* Pipeline Flow */}
       <div style={{ marginTop: '1.5rem' }}>
         <Card title="Pipeline Flow" subtitle="Content journey across all pillars">
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '0.5rem',
-              alignItems: 'stretch',
-            }}
-          >
+          <div className="grid-pipeline-flow">
             <PipelineStage
               color="#10b981"
               label="Creation"
@@ -202,15 +188,7 @@ export default function HomePage() {
             />
           </div>
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '0.5rem',
-              marginTop: '0.5rem',
-              textAlign: 'center',
-            }}
-          >
+          <div className="grid-pipeline-arrows">
             <div style={{ fontSize: '1.25rem', color: '#d1d5db' }}>&darr;</div>
             <div style={{ fontSize: '1.25rem', color: '#d1d5db' }}>&darr;</div>
             <div style={{ fontSize: '1.25rem', color: '#d1d5db' }}>&darr;</div>
@@ -233,14 +211,7 @@ export default function HomePage() {
       </div>
 
       {/* Main Content: Pillar Grid + Alerts Sidebar */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 350px',
-          gap: '1.5rem',
-          marginTop: '1.5rem',
-        }}
-      >
+      <div className="grid-main-layout">
         {/* Pillar Summary Grid */}
         <div>
           <h2
@@ -253,13 +224,7 @@ export default function HomePage() {
           >
             Pillar Overview
           </h2>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '1rem',
-            }}
-          >
+          <div className="grid-pillar-overview">
             {PILLARS.map((p) => (
               <PillarCard
                 key={p.id}

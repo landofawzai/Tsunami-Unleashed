@@ -62,7 +62,7 @@ export default function StatusPage() {
   const pillarsHealth = healthData?.pillars || {}
 
   return (
-    <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '2rem' }}>
+    <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '1rem' }}>
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.25rem' }}>
           System Status
@@ -281,7 +281,7 @@ export default function StatusPage() {
                         <span style={{ fontFamily: 'monospace', color: '#334155', flex: 1 }}>
                           {ep.path}
                         </span>
-                        <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>
+                        <span className="endpoint-desc">
                           {ep.description}
                         </span>
                       </div>
