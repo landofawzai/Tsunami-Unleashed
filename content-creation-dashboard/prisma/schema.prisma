@@ -1,0 +1,247 @@
+// Tsunami Unleashed Content Creation Dashboard
+// Database Schema — 12 Models
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── CONTENT ITEMS ──
+
+model ContentItem {
+  id                String    @id @default(cuid())
+  contentId         String    @unique
+  title             String
+  description       String?
+  contentType       String    // sermon, teaching, article, study_guide, testimony
+  mediaType         String    // video, audio, text, mixed
+  language          String    @default("en")
+  body              String?
+  wordCount         Int?
+  durationSeconds   Int?
+  sourceUrl         String?
+  driveFileId       String?
+  thumbnailUrl      String?
+  seriesId          String?
+  status            String    @default("planning") // planning, drafting, recording, editing, review, approved, finalized, sent_to_repurposing, archived
+  priority          Int       @default(5) // 1=highest, 10=lowest
+  assignedTo        String?
+  tags              String?   // JSON array
+  targetLanguages   String?   // JSON array ["hi","bn","mai"]
+  metadata          String?   // JSON: .meta.json sidecar data
+  sentToRepurposing Boolean   @default(false)
+  sentAt            DateTime?
+  plannedDate       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  series  Series?          @relation(fields: [seriesId], references: [id])
+  reviews ReviewRecord[]
+  files   ContentFile[]
+  tasks   ProductionTask[]
+  briefs  ContentBrief[]
+  calendarEntries CalendarEntry[]
+
+  @@index([contentId])
+  @@index([status])
+  @@index([contentType])
+  @@index([mediaType])
+  @@index([seriesId])
+  @@index([plannedDate])
+  @@index([priority])
+}
+
+// ── SERIES ──
+
+model Series {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?
+  contentType  String?  // Optional: limit series to one content type
+  totalPlanned Int      @default(0)
+  status       String   @default("active") // active, completed, paused
+  tags         String?  // JSON array
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  items ContentItem[]
+
+  @@index([status])
+}
+
+// ── CONTENT BRIEF ──
+
+model ContentBrief {
+  id                 String   @id @default(cuid())
+  contentItemId      String
+  outline            String?
+  keyPoints          String?  // JSON array
+  targetAudience     String?
+  estimatedDuration  Int?     // Minutes
+  estimatedWordCount Int?
+  scriptureReferences String? // JSON array
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+
+  @@index([contentItemId])
+}
+
+// ── REVIEW RECORDS ──
+
+model ReviewRecord {
+  id                  String   @id @default(cuid())
+  contentItemId       String
+  reviewerName        String
+  status              String   // approved, revision_requested, rejected
+  feedback            String?
+  theologicalAccuracy Int?     // 1-5 rating
+  clarity             Int?     // 1-5 rating
+  productionQuality   Int?     // 1-5 rating
+  createdAt           DateTime @default(now())
+
+  contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+
+  @@index([contentItemId])
+  @@index([status])
+}
+
+// ── PRODUCTION TASKS ──
+
+model ProductionTask {
+  id            String    @id @default(cuid())
+  contentItemId String
+  title         String
+  description   String?
+  assignedTo    String?
+  status        String    @default("pending") // pending, in_progress, completed
+  dueDate       DateTime?
+  completedAt   DateTime?
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+
+  @@index([contentItemId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+// ── CONTENT FILES ──
+
+model ContentFile {
+  id            String   @id @default(cuid())
+  contentItemId String
+  fileName      String
+  fileType      String   // video, audio, text, image, document
+  mimeType      String?
+  fileSize      Int?     // Bytes
+  driveFileId   String?
+  driveUrl      String?
+  isPrimary     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+
+  @@index([contentItemId])
+  @@index([fileType])
+}
+
+// ── SYSTEM ──
+
+model Alert {
+  id               String    @id @default(cuid())
+  severity         String    // info, warning, error, critical
+  category         String    // review_overdue, production_delay, integration_error, system_error
+  message          String
+  details          String?   // JSON
+  relatedContentId String?
+  isRead           Boolean   @default(false)
+  isResolved       Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  resolvedAt       DateTime?
+
+  @@index([severity])
+  @@index([isRead])
+  @@index([isResolved])
+  @@index([createdAt])
+}
+
+model CreationMetric {
+  id               String   @id @default(cuid())
+  date             DateTime @unique
+  contentPlanned   Int      @default(0)
+  contentDrafted   Int      @default(0)
+  contentFinalized Int      @default(0)
+  contentSent      Int      @default(0)
+  reviewsCompleted Int      @default(0)
+  tasksCompleted   Int      @default(0)
+  typeBreakdown    String?  // JSON: { "sermon": 2, "article": 3, ... }
+  statusBreakdown  String?  // JSON: { "planning": 5, "drafting": 3, ... }
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([date])
+}
+
+model PabblyEvent {
+  id               String   @id @default(cuid())
+  direction        String   // inbound, outbound
+  workflowName     String
+  eventType        String
+  payload          String?  // JSON
+  status           String   @default("sent") // sent, received, failed
+  relatedContentId String?
+  errorMessage     String?
+  createdAt        DateTime @default(now())
+
+  @@index([direction])
+  @@index([workflowName])
+  @@index([createdAt])
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+}
+
+model ContentTag {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  category   String   @default("topic") // topic, book, audience, season
+  usageCount Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([name])
+  @@index([category])
+}
+
+model CalendarEntry {
+  id            String    @id @default(cuid())
+  contentItemId String?
+  title         String
+  description   String?
+  entryType     String    @default("deadline") // deadline, milestone, publish_date
+  date          DateTime
+  isCompleted   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  contentItem ContentItem? @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+
+  @@index([contentItemId])
+  @@index([date])
+  @@index([entryType])
+}

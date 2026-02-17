@@ -1,0 +1,41 @@
+{
+  "name": "content-creation-dashboard",
+  "version": "1.0.0",
+  "description": "Content Creation Dashboard for Tsunami Unleashed - Source Content Production & Management",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3003",
+    "build": "next build",
+    "start": "next start --port 3003",
+    "lint": "next lint",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "db:seed": "node prisma/seed.js"
+  },
+  "keywords": [
+    "content-creation",
+    "production",
+    "automation",
+    "ministry",
+    "dashboard"
+  ],
+  "author": "Tsunami Unleashed",
+  "license": "CC0-1.0",
+  "dependencies": {
+    "@prisma/client": "5.22.0",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "swr": "^2.4.0"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "prisma": "5.22.0",
+    "typescript": "^5.9.3"
+  }
+}
