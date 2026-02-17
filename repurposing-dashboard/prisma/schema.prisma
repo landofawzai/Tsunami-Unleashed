@@ -1,0 +1,255 @@
+// Tsunami Unleashed Content Repurposing + Translation Dashboard
+// Database Schema — 11 Models
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── SOURCE CONTENT ──
+
+model SourceContent {
+  id              String   @id @default(cuid())
+  contentId       String   @unique
+  title           String
+  contentType     String   // sermon, teaching, article, study_guide, testimony
+  mediaType       String   // video, audio, text, mixed
+  language        String   @default("en")
+  sourceUrl       String?
+  driveFileId     String?
+  durationSeconds Int?
+  wordCount       Int?
+  transcription   String?
+  isTranscribed   Boolean  @default(false)
+  tags            String?  // JSON array
+  metadata        String?  // JSON: original .meta.json sidecar data
+  status          String   @default("pending") // pending, processing, ready, failed
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  derivatives   Derivative[]
+  processingJobs ProcessingJob[]
+
+  @@index([contentId])
+  @@index([status])
+  @@index([contentType])
+  @@index([mediaType])
+}
+
+// ── DERIVATIVES ──
+
+model Derivative {
+  id                  String    @id @default(cuid())
+  contentId           String    @unique
+  parentContentId     String
+  sourceContentId     String
+  derivativeType      String    // blog_post, social_quote, thread_summary, study_guide, newsletter_excerpt, audio_transcription, video_clip_meta, quote_graphic
+  title               String
+  body                String
+  language            String    @default("en")
+  format              String    @default("text") // text, markdown, html, image_url
+  wordCount           Int?
+  imageUrl            String?   // For quote_graphic derivatives (FAL.AI generated)
+  isAiGenerated       Boolean   @default(true)
+  aiModel             String?
+  templateId          String?
+  status              String    @default("draft") // draft, ready, sent_to_distribution, failed
+  sentToDistribution  Boolean   @default(false)
+  distributedAt       DateTime?
+  metadata            String?   // JSON
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  sourceContent SourceContent @relation(fields: [sourceContentId], references: [id], onDelete: Cascade)
+  translations  Translation[]
+
+  @@index([sourceContentId])
+  @@index([parentContentId])
+  @@index([derivativeType])
+  @@index([status])
+  @@index([language])
+}
+
+// ── TRANSLATIONS ──
+
+model Translation {
+  id                  String    @id @default(cuid())
+  contentId           String    @unique
+  parentContentId     String
+  derivativeId        String?
+  sourceLanguage      String
+  targetLanguage      String    // hi, bn, mai
+  title               String
+  body                String
+  status              String    @default("ai_draft") // ai_draft, review_pending, reviewed, approved, failed
+  reviewPass          Int       @default(1) // 1=AI draft, 2=local review, 3=theological review
+  reviewerNotes       String?
+  isAiGenerated       Boolean   @default(true)
+  aiModel             String?
+  sentToDistribution  Boolean   @default(false)
+  distributedAt       DateTime?
+  metadata            String?   // JSON
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  derivative Derivative? @relation(fields: [derivativeId], references: [id], onDelete: Cascade)
+
+  @@unique([parentContentId, targetLanguage])
+  @@index([derivativeId])
+  @@index([targetLanguage])
+  @@index([status])
+  @@index([reviewPass])
+}
+
+// ── PROCESSING ──
+
+model ProcessingJob {
+  id              String    @id @default(cuid())
+  sourceContentId String?
+  jobType         String    // transcription, clip_extraction, derivative_generation, translation, image_generation, batch_repurpose
+  status          String    @default("queued") // queued, processing, completed, failed, cancelled
+  priority        Int       @default(5) // 1=highest, 10=lowest
+  progress        Int       @default(0) // 0-100
+  inputData       String?   // JSON
+  outputData      String?   // JSON
+  errorMessage    String?
+  retryCount      Int       @default(0)
+  maxRetries      Int       @default(3)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sourceContent SourceContent? @relation(fields: [sourceContentId], references: [id])
+
+  @@index([sourceContentId])
+  @@index([jobType])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+// ── TEMPLATES ──
+
+model DerivativeTemplate {
+  id                  String   @id @default(cuid())
+  name                String
+  derivativeType      String   // blog_post, social_quote, thread_summary, etc.
+  description         String?
+  systemPrompt        String
+  userPromptTemplate  String   // Template with {placeholders}
+  maxTokens           Int      @default(1024)
+  outputFormat        String   @default("text") // text, markdown, html
+  isActive            Boolean  @default(true)
+  usageCount          Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([derivativeType])
+  @@index([isActive])
+}
+
+// ── SYSTEM ──
+
+model Alert {
+  id               String    @id @default(cuid())
+  severity         String    // info, warning, error, critical
+  category         String    // processing_failure, translation_error, capacity_warning, ai_unavailable, distribution_sync, system_error
+  message          String
+  details          String?   // JSON
+  relatedContentId String?
+  isRead           Boolean   @default(false)
+  isResolved       Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  resolvedAt       DateTime?
+
+  @@index([severity])
+  @@index([isRead])
+  @@index([isResolved])
+  @@index([createdAt])
+}
+
+model RepurposingMetric {
+  id                      String   @id @default(cuid())
+  date                    DateTime @unique
+  sourcesIngested         Int      @default(0)
+  derivativesGenerated    Int      @default(0)
+  translationsCompleted   Int      @default(0)
+  jobsProcessed           Int      @default(0)
+  jobsFailed              Int      @default(0)
+  aiTokensUsed            Int      @default(0)
+  scribeMinutes           Float    @default(0.0)
+  imagesGenerated         Int      @default(0)
+  sentToDistribution      Int      @default(0)
+  derivativeBreakdown     String?  // JSON: { "blog_post": 5, "social_quote": 20, ... }
+  languageBreakdown       String?  // JSON: { "hi": 10, "bn": 8, "mai": 5 }
+  successRate             Float    @default(0.0)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([date])
+}
+
+model LanguageConfig {
+  id                String   @id @default(cuid())
+  code              String   @unique // hi, bn, mai
+  name              String   // Hindi, Bengali, Maithili
+  nativeName        String?  // हिन्दी, বাংলা, मैथिली
+  isActive          Boolean  @default(true)
+  priority          Int      @default(5)
+  hasLocalReviewer  Boolean  @default(false)
+  reviewerContact   String?
+  totalTranslations Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([code])
+  @@index([isActive])
+}
+
+model PabblyEvent {
+  id               String   @id @default(cuid())
+  direction        String   // inbound, outbound
+  workflowName     String
+  eventType        String
+  payload          String?  // JSON
+  status           String   @default("sent") // sent, received, failed
+  relatedContentId String?
+  errorMessage     String?
+  createdAt        DateTime @default(now())
+
+  @@index([direction])
+  @@index([workflowName])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+}
+
+model DerivativeQueue {
+  id              String   @id @default(cuid())
+  sourceContentId String
+  derivativeTypes String   // JSON array
+  languages       String   // JSON array
+  status          String   @default("pending") // pending, processing, completed, partial, failed
+  totalExpected   Int      @default(0)
+  totalCompleted  Int      @default(0)
+  totalFailed     Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([sourceContentId])
+  @@index([status])
+}
