@@ -1,0 +1,291 @@
+// Tsunami Unleashed Communication Dashboard
+// Database Schema for Outbound Multi-Channel Messaging
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── PEOPLE ──
+
+// Model 1: Contact - People the ministry communicates with
+model Contact {
+  id            String   @id @default(cuid())
+  name          String
+  email         String?  @unique
+  phone         String?  // For SMS
+  whatsapp      String?  // WhatsApp number (may differ from phone)
+  telegram      String?  // Telegram handle or chat ID
+  signal        String?  // Signal number
+  region        String?  // "North America", "East Africa", "Europe", etc.
+  city          String?
+  country       String?
+  language      String   @default("en") // ISO 639-1 preferred language
+  timezone      String?  // IANA timezone, e.g. "Africa/Nairobi"
+  notes         String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  segments      ContactSegment[]
+  deliveries    DeliveryLog[]
+  enrollments   SequenceEnrollment[]
+
+  @@index([region])
+  @@index([language])
+  @@index([isActive])
+}
+
+// Model 2: Segment - Audience groups for targeted messaging
+model Segment {
+  id            String   @id @default(cuid())
+  name          String   @unique // "field_leaders", "supporters", "seekers", etc.
+  description   String?
+  color         String?  // For UI badge coloring
+  contactCount  Int      @default(0) // Denormalized for fast display
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  contacts      ContactSegment[]
+  broadcasts    Broadcast[]
+  sequences     Sequence[]
+}
+
+// Model 3: ContactSegment - Many-to-many join between contacts and segments
+model ContactSegment {
+  id            String   @id @default(cuid())
+  contactId     String
+  segmentId     String
+  addedAt       DateTime @default(now())
+
+  contact       Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  segment       Segment  @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, segmentId])
+  @@index([contactId])
+  @@index([segmentId])
+}
+
+// ── MESSAGES ──
+
+// Model 4: Campaign - A communication effort (update, prayer request, alert, etc.)
+model Campaign {
+  id            String    @id @default(cuid())
+  title         String    // Internal name: "February Ministry Update"
+  type          String    // update|prayer|urgent|sequence_step|field_notice|announcement
+  body          String    // Master message content (the "source" version)
+  status        String    @default("draft") // draft|pending_approval|approved|scheduled|sending|sent|failed
+  priority      String    @default("normal") // normal|high|urgent
+  isUrgent      Boolean   @default(false) // Urgent bypasses scheduling
+  language      String    @default("en") // Source language
+  createdBy     String?   // Who drafted it
+  approvedBy    String?   // Who approved it
+  approvedAt    DateTime?
+  scheduledAt   DateTime? // When to send (null = send immediately on approval)
+  sentAt        DateTime?
+  metadata      String?   // JSON: tags, related contentIds, notes
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  versions      CampaignVersion[]
+  broadcasts    Broadcast[]
+
+  @@index([status])
+  @@index([type])
+  @@index([scheduledAt])
+  @@index([createdAt])
+}
+
+// Model 5: CampaignVersion - Channel-specific adaptation of a campaign message
+model CampaignVersion {
+  id            String   @id @default(cuid())
+  campaignId    String
+  channel       String   // email|sms|whatsapp|telegram|signal|social_media
+  subject       String?  // Email subject line
+  body          String   // Channel-adapted content
+  language      String   @default("en") // Language of this version
+  isAiGenerated Boolean  @default(false) // Was this adapted by AI?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  campaign      Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, channel, language])
+  @@index([campaignId])
+  @@index([channel])
+}
+
+// ── DELIVERY ──
+
+// Model 6: Broadcast - Scheduled delivery of a campaign to a segment
+model Broadcast {
+  id              String    @id @default(cuid())
+  campaignId      String
+  segmentId       String
+  channels        String    // JSON array: ["email", "whatsapp", "sms"]
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  status          String    @default("pending") // pending|sending|sent|partial|failed
+  totalRecipients Int       @default(0)
+  delivered       Int       @default(0)
+  failed          Int       @default(0)
+  opened          Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  campaign        Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  segment         Segment   @relation(fields: [segmentId], references: [id])
+  deliveries      DeliveryLog[]
+
+  @@index([campaignId])
+  @@index([segmentId])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+// Model 7: DeliveryLog - Per-recipient, per-channel delivery tracking
+model DeliveryLog {
+  id            String    @id @default(cuid())
+  broadcastId   String
+  contactId     String
+  channel       String    // email|sms|whatsapp|telegram|signal|social_media
+  status        String    @default("queued") // queued|sent|delivered|opened|failed
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  openedAt      DateTime?
+  errorMessage  String?
+  externalId    String?   // ID from the delivery service
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  broadcast     Broadcast @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+  contact       Contact   @relation(fields: [contactId], references: [id])
+
+  @@index([broadcastId])
+  @@index([contactId])
+  @@index([status])
+  @@index([channel])
+}
+
+// ── AUTOMATION ──
+
+// Model 8: Sequence - Automated drip campaign definition
+model Sequence {
+  id            String   @id @default(cuid())
+  name          String   // "New Field Worker Onboarding", "Seeker Welcome Series"
+  description   String?
+  segmentId     String?  // Auto-enroll contacts added to this segment
+  trigger       String   // segment_join|manual|webhook
+  status        String   @default("active") // active|paused|archived
+  totalSteps    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  segment       Segment? @relation(fields: [segmentId], references: [id])
+  steps         SequenceStep[]
+  enrollments   SequenceEnrollment[]
+
+  @@index([status])
+  @@index([segmentId])
+}
+
+// Model 9: SequenceStep - Individual step within a sequence
+model SequenceStep {
+  id            String   @id @default(cuid())
+  sequenceId    String
+  stepNumber    Int      // 1, 2, 3...
+  delayDays     Int      @default(0) // Days to wait after previous step (0 = immediate)
+  subject       String?  // Email subject
+  body          String   // Message content (master version)
+  channels      String   // JSON array of channels to use
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sequence      Sequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+
+  @@unique([sequenceId, stepNumber])
+  @@index([sequenceId])
+}
+
+// Model 10: SequenceEnrollment - Contact's progress through a sequence
+model SequenceEnrollment {
+  id            String    @id @default(cuid())
+  sequenceId    String
+  contactId     String
+  currentStep   Int       @default(0) // 0 = not started yet
+  status        String    @default("active") // active|paused|completed|exited
+  nextSendAt    DateTime? // When the next step should fire
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  updatedAt     DateTime  @updatedAt
+
+  sequence      Sequence  @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  contact       Contact   @relation(fields: [contactId], references: [id])
+
+  @@unique([sequenceId, contactId])
+  @@index([sequenceId])
+  @@index([contactId])
+  @@index([status])
+  @@index([nextSendAt])
+}
+
+// ── SYSTEM ──
+
+// Model 11: Template - Reusable message templates
+model Template {
+  id            String   @id @default(cuid())
+  name          String
+  type          String   // update|prayer|urgent|field_notice|announcement|welcome
+  body          String
+  channelHints  String?  // JSON: suggested adaptations per channel
+  language      String   @default("en")
+  usageCount    Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([type])
+  @@index([isActive])
+}
+
+// Model 12: Alert - System notifications
+model Alert {
+  id            String    @id @default(cuid())
+  severity      String    // info|warning|error|critical
+  category      String    // delivery_failure|sequence_error|urgent_pending|system_error
+  message       String
+  details       String?   // JSON
+  isRead        Boolean   @default(false)
+  isResolved    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  resolvedAt    DateTime?
+
+  @@index([severity])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// Model 13: CommunicationMetric - Daily rollup stats
+model CommunicationMetric {
+  id                  String   @id @default(cuid())
+  date                DateTime @unique
+  messagesSent        Int      @default(0)
+  messagesDelivered   Int      @default(0)
+  messagesFailed      Int      @default(0)
+  messagesOpened      Int      @default(0)
+  deliveryRate        Float    @default(0.0)
+  openRate            Float    @default(0.0)
+  campaignsSent       Int      @default(0)
+  urgentAlertsSent    Int      @default(0)
+  prayerRequestsSent  Int      @default(0)
+  channelBreakdown    String?  // JSON: { "email": 50, "whatsapp": 30, "sms": 20 }
+  regionBreakdown     String?  // JSON: { "East Africa": 15, "North America": 25 }
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([date])
+}

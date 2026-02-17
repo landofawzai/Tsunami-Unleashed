@@ -28,7 +28,12 @@ yarn.lock
 dist/
 build/
 .cache/
+.next/
 *.log
+
+# Database files
+*.db
+*.db-journal
 
 # Environment variables
 .env
