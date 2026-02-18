@@ -88,6 +88,7 @@ model Translation {
   status              String    @default("ai_draft") // ai_draft, review_pending, reviewed, approved, failed
   reviewPass          Int       @default(1) // 1=AI draft, 2=local review, 3=theological review
   reviewerNotes       String?
+  lastEditedBy        String?   // Username of last editor (translator portal audit trail)
   isAiGenerated       Boolean   @default(true)
   aiModel             String?
   sentToDistribution  Boolean   @default(false)
@@ -252,4 +253,22 @@ model DerivativeQueue {
 
   @@index([sourceContentId])
   @@index([status])
+}
+
+// ── TRANSLATOR PORTAL ──
+
+model TranslatorUser {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  passwordHash String
+  displayName  String
+  role         String    @default("translator") // translator | reviewer | admin
+  languages    String    @default("[]")         // JSON array: ["hi","bn"]
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([username])
+  @@index([role])
 }

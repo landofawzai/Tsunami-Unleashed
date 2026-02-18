@@ -14,6 +14,10 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [settingsEdits, setSettingsEdits] = useState<Record<string, string>>({})
   const [showPabblyEvents, setShowPabblyEvents] = useState(false)
+  const [showNewUser, setShowNewUser] = useState(false)
+  const [newUser, setNewUser] = useState({ username: '', password: '', displayName: '', role: 'translator', languages: '' })
+  const [creatingUser, setCreatingUser] = useState(false)
+  const [showPortalUsers, setShowPortalUsers] = useState(false)
 
   const { data: settingsData, mutate: mutateSettings } = useSWR('/api/settings', fetcher)
   const { data: langData, mutate: mutateLangs } = useSWR('/api/languages', fetcher)
@@ -21,6 +25,13 @@ export default function SettingsPage() {
     showPabblyEvents ? '/api/pabbly-events' : null,
     fetcher
   )
+  const { data: usersData, mutate: mutateUsers } = useSWR(
+    showPortalUsers ? '/api/translate/users' : null,
+    fetcher
+  )
+
+  const portalSetting = settingsData?.settings?.find((s: any) => s.key === 'translation_portal_open')
+  const isPortalOpen = portalSetting?.value === 'true'
 
   function handleSettingChange(key: string, value: string) {
     setSettingsEdits({ ...settingsEdits, [key]: value })
@@ -75,6 +86,74 @@ export default function SettingsPage() {
       mutateLangs()
     } catch {
       setActionMessage('Error updating reviewer status')
+    }
+  }
+
+  async function togglePortal() {
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          updates: [{ key: 'translation_portal_open', value: isPortalOpen ? 'false' : 'true' }],
+        }),
+      })
+      if (!res.ok) throw new Error('Failed to toggle')
+      setActionMessage(`Portal ${isPortalOpen ? 'closed' : 'opened'}`)
+      mutateSettings()
+    } catch {
+      setActionMessage('Error toggling portal')
+    }
+  }
+
+  async function createUser() {
+    setCreatingUser(true)
+    setActionMessage('')
+    try {
+      if (!newUser.username || !newUser.password || !newUser.displayName) {
+        setActionMessage('Error: Username, password, and display name are required')
+        setCreatingUser(false)
+        return
+      }
+      const languages = newUser.languages
+        .split(',')
+        .map((l) => l.trim().toLowerCase())
+        .filter(Boolean)
+      const res = await fetch('/api/translate/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: newUser.username,
+          password: newUser.password,
+          displayName: newUser.displayName,
+          role: newUser.role,
+          languages,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to create user')
+      setActionMessage(`User "${data.user.username}" created`)
+      setNewUser({ username: '', password: '', displayName: '', role: 'translator', languages: '' })
+      setShowNewUser(false)
+      mutateUsers()
+    } catch (err: any) {
+      setActionMessage(`Error: ${err.message}`)
+    } finally {
+      setCreatingUser(false)
+    }
+  }
+
+  async function toggleUserActive(userId: string, isActive: boolean) {
+    try {
+      const res = await fetch(`/api/translate/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !isActive }),
+      })
+      if (!res.ok) throw new Error('Failed to update user')
+      mutateUsers()
+    } catch {
+      setActionMessage('Error updating user')
     }
   }
 
@@ -164,6 +243,141 @@ export default function SettingsPage() {
               ))}
             </div>
           )}
+        </Card>
+
+        {/* Translator Portal */}
+        <Card title="Translator Portal" subtitle="User management and portal access control">
+          <div className="portal-section">
+            <div className="portal-toggle-row">
+              <div className="portal-toggle-info">
+                <span className="portal-toggle-label">Portal Status</span>
+                <span className="portal-toggle-desc">
+                  {isPortalOpen
+                    ? 'Open — anyone can submit translation edits'
+                    : 'Closed — login required for all actions'}
+                </span>
+              </div>
+              <button
+                className={`portal-toggle-btn ${isPortalOpen ? 'open' : 'closed'}`}
+                onClick={togglePortal}
+              >
+                {isPortalOpen ? 'Close Portal' : 'Open Portal'}
+              </button>
+            </div>
+
+            <div className="portal-divider" />
+
+            <div className="portal-users-header">
+              <span className="portal-users-title">Portal Users</span>
+              {!showPortalUsers ? (
+                <button className="load-btn" onClick={() => setShowPortalUsers(true)}>
+                  Load Users
+                </button>
+              ) : (
+                <button
+                  className="action-btn activate"
+                  onClick={() => setShowNewUser(!showNewUser)}
+                >
+                  {showNewUser ? 'Cancel' : '+ New User'}
+                </button>
+              )}
+            </div>
+
+            {showNewUser && (
+              <div className="new-user-form">
+                <input
+                  type="text"
+                  placeholder="Username"
+                  value={newUser.username}
+                  onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                  className="setting-input"
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  className="setting-input"
+                />
+                <input
+                  type="text"
+                  placeholder="Display Name"
+                  value={newUser.displayName}
+                  onChange={(e) => setNewUser({ ...newUser, displayName: e.target.value })}
+                  className="setting-input"
+                />
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                  className="setting-input"
+                >
+                  <option value="translator">Translator</option>
+                  <option value="reviewer">Reviewer</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <input
+                  type="text"
+                  placeholder="Languages (comma-separated codes: hi, bn)"
+                  value={newUser.languages}
+                  onChange={(e) => setNewUser({ ...newUser, languages: e.target.value })}
+                  className="setting-input"
+                />
+                <button className="save-btn" onClick={createUser} disabled={creatingUser}>
+                  {creatingUser ? 'Creating...' : 'Create User'}
+                </button>
+              </div>
+            )}
+
+            {showPortalUsers && !usersData && (
+              <p className="empty-text">Loading users...</p>
+            )}
+
+            {usersData && usersData.users && (
+              <div className="portal-users-list">
+                {usersData.users.length === 0 ? (
+                  <p className="empty-text">No portal users yet</p>
+                ) : (
+                  usersData.users.map((u: any) => (
+                    <div key={u.id} className="portal-user-item">
+                      <div className="portal-user-header">
+                        <div className="portal-user-info">
+                          <span className="portal-user-name">{u.displayName}</span>
+                          <Badge variant="neutral" size="sm">{u.username}</Badge>
+                        </div>
+                        <div className="portal-user-badges">
+                          <Badge
+                            variant={u.role === 'admin' ? 'error' : u.role === 'reviewer' ? 'purple' : 'info'}
+                            size="sm"
+                          >
+                            {u.role}
+                          </Badge>
+                          <Badge variant={u.isActive ? 'success' : 'neutral'} size="sm">
+                            {u.isActive ? 'Active' : 'Disabled'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="portal-user-meta">
+                        <span className="lang-stat">
+                          Languages: {u.languages.length > 0 ? u.languages.join(', ').toUpperCase() : 'All'}
+                        </span>
+                        <span className="lang-stat">
+                          Last login: {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : 'Never'}
+                        </span>
+                      </div>
+                      <div className="lang-actions">
+                        <button
+                          className={`action-btn ${u.isActive ? 'deactivate' : 'activate'}`}
+                          onClick={() => toggleUserActive(u.id, u.isActive)}
+                        >
+                          {u.isActive ? 'Disable' : 'Enable'}
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </Card>
 
         {/* Pabbly Events */}
@@ -382,6 +596,112 @@ export default function SettingsPage() {
         .deactivate { background: #fee2e2; color: #991b1b; }
         .add-reviewer { background: #ede9fe; color: #5b21b6; }
         .remove-reviewer { background: #f3f4f6; color: #374151; }
+
+        /* Portal */
+        .portal-section {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        .portal-toggle-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.75rem;
+          background: #f9fafb;
+          border-radius: 8px;
+        }
+        .portal-toggle-info {
+          display: flex;
+          flex-direction: column;
+          gap: 0.125rem;
+        }
+        .portal-toggle-label {
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #111827;
+        }
+        .portal-toggle-desc {
+          font-size: 0.75rem;
+          color: #6b7280;
+        }
+        .portal-toggle-btn {
+          padding: 0.5rem 1rem;
+          border: none;
+          border-radius: 6px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+        .portal-toggle-btn.open {
+          background: #fee2e2;
+          color: #991b1b;
+        }
+        .portal-toggle-btn.closed {
+          background: #d1fae5;
+          color: #065f46;
+        }
+        .portal-divider {
+          height: 1px;
+          background: #e5e7eb;
+        }
+        .portal-users-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .portal-users-title {
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #111827;
+        }
+        .new-user-form {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          padding: 0.75rem;
+          background: #f9fafb;
+          border-radius: 8px;
+        }
+        .portal-users-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          max-height: 400px;
+          overflow-y: auto;
+        }
+        .portal-user-item {
+          padding: 0.75rem;
+          background: #f9fafb;
+          border-radius: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        .portal-user-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .portal-user-info {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .portal-user-name {
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #111827;
+        }
+        .portal-user-badges {
+          display: flex;
+          gap: 0.5rem;
+        }
+        .portal-user-meta {
+          display: flex;
+          gap: 1rem;
+        }
 
         /* Pabbly Events */
         .load-btn {

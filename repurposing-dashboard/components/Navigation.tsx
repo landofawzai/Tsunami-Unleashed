@@ -1,8 +1,14 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 export function Navigation() {
+  const pathname = usePathname()
+
+  // Hide dashboard nav on translator portal pages
+  if (pathname.startsWith('/translate')) return null
+
   return (
     <nav
       style={{
