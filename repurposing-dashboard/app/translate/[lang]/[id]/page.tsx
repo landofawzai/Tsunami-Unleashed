@@ -151,11 +151,9 @@ export default function TranslationDetailPage() {
             <span>Original ({(translation.sourceLanguage || 'en').toUpperCase()})</span>
             <span className="toggle-arrow">{showOriginal ? '▲' : '▼'}</span>
           </button>
-          {showOriginal && (
-            <div className="original-text">
-              {translation.derivative?.body || 'Original text not available'}
-            </div>
-          )}
+          <div className={`original-text ${showOriginal ? 'expanded' : ''}`}>
+            {translation.derivative?.body || 'Original text not available'}
+          </div>
         </div>
 
         {/* Translation text */}
@@ -443,6 +441,7 @@ export default function TranslationDetailPage() {
         }
         .toggle-arrow { font-size: 0.65rem; color: #9ca3af; }
         .original-text {
+          display: none;
           background: #f9fafb;
           border: 1px solid #e5e7eb;
           border-radius: 0 0 8px 8px;
@@ -454,6 +453,9 @@ export default function TranslationDetailPage() {
           overflow-wrap: break-word;
           max-height: 300px;
           overflow-y: auto;
+        }
+        .original-text.expanded {
+          display: block;
         }
         .section-label {
           font-size: 0.8rem;
