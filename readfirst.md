@@ -13,6 +13,9 @@ Ministry automation system — 6-pillar architecture to reach 1 billion people g
 `master`
 
 ## Recent Commits
+- 3dbd07a feat(communication): add Telegram subscriber auto-capture endpoint
+- 962970a fix(communication): prepend subject line into IM channel message body
+- 36fa96e feat(communication): add direct Telegram Bot API delivery, bypass Pabbly
 - a4a7b1d fix(translate): show original text on desktop and fix mobile toggle
 - 3d9689d feat(repurposing): add mobile-first translator portal with auth
 - 2dd21dc fix(master-dashboard): make all pages mobile-responsive
@@ -20,12 +23,9 @@ Ministry automation system — 6-pillar architecture to reach 1 billion people g
 - cf7dff7 feat(master-dashboard): Session 4 — deployment script + status docs
 - ec2686b feat(master-dashboard): Session 3 — pipeline visualization + settings page
 - f231d4c feat(master-dashboard): Session 2 — home dashboard + status page
-- 181e2a0 feat(master-dashboard): Session 1 — scaffolding + aggregation API
-- cad61d1 feat(content-creation): Session 10 — deployment to Hetzner
-- fd9b90a docs(communication): record successful Hetzner production deployment
 
 ## Uncommitted Work (about to be committed)
-- `communication-dashboard/lib/pabbly-integration.ts` — Added direct Telegram Bot API support; Telegram channel now bypasses Pabbly and calls the Telegram API directly from the dashboard
+- `communication-dashboard/update-server.sh` — Reusable deployment script for Hetzner server updates
 
 ## What's Been Built
 
@@ -40,19 +40,28 @@ Ministry automation system — 6-pillar architecture to reach 1 billion people g
 ### Communication Dashboard — Channel Status
 | Channel | Integration | Status |
 |---------|------------|--------|
-| Email | Pabbly → Gmail | Wired, needs production test |
+| Email | Pabbly → Gmail | Wired and tested |
 | Telegram | Direct Bot API | Wired and tested |
 | WhatsApp | Pabbly (placeholder) | Not configured |
 | Signal | Pabbly (placeholder) | Not configured |
 | SMS | Pabbly (placeholder) | Not configured |
 | Social Media | Pabbly (placeholder) | Not configured |
 
+### Communication Dashboard — Automation
+| Feature | Trigger | Status |
+|---------|---------|--------|
+| Telegram subscriber sync | Pabbly daily schedule | Live |
+| Sequence drip processing | Not configured | Pending |
+| Google Drive campaign import | Not configured | Pending |
+
 ## Key Files
 - `communication-dashboard/lib/pabbly-integration.ts` — Delivery routing (Pabbly + direct APIs)
+- `communication-dashboard/lib/telegram-sync.ts` — Telegram subscriber auto-capture
 - `communication-dashboard/lib/broadcast-engine.ts` — Broadcast execution
 - `communication-dashboard/lib/sequence-engine.ts` — Drip campaign automation
 - `communication-dashboard/lib/channel-adapter.ts` — AI channel adaptation (requires ANTHROPIC_API_KEY)
 - `communication-dashboard/lib/translator.ts` — AI translation (requires ANTHROPIC_API_KEY)
+- `communication-dashboard/update-server.sh` — Reusable Hetzner deployment script
 - `communication-dashboard/.env` — All config keys and webhook URLs
 
 ## Known Issues
@@ -65,3 +74,6 @@ Ministry automation system — 6-pillar architecture to reach 1 billion people g
 - `.env` is not tracked by git — secrets stay local
 - Telegram now uses `TELEGRAM_BOT_TOKEN` env var (not `PABBLY_WEBHOOK_TELEGRAM`)
 - Channels with `PASTE-` placeholder URLs are silently skipped (pipeline continues)
+- IM channels (Telegram, WhatsApp, Signal, SMS) prepend subject into body automatically
+- Telegram sync tracks last `update_id` in `.last-telegram-update` file — do not delete
+- Deploy updates via `bash communication-dashboard/update-server.sh` on the server
