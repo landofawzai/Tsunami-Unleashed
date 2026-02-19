@@ -36,6 +36,18 @@ const CHANNEL_WEBHOOK_VARS: Record<string, string> = {
 // Channels that use direct API calls instead of Pabbly
 const DIRECT_CHANNELS = ['telegram']
 
+// Instant message channels prepend the subject into the body
+const IM_CHANNELS = new Set(['telegram', 'whatsapp', 'signal', 'sms'])
+
+/**
+ * For instant message channels, prepend the subject line into the message body.
+ * Email keeps subject separate; IM channels have no subject field.
+ */
+function formatIMBody(subject: string | undefined, body: string): string {
+  if (!subject) return body
+  return `Subject: ${subject}\n\n${body}`
+}
+
 /**
  * Send a message directly via the Telegram Bot API
  */
@@ -52,6 +64,8 @@ async function sendTelegramDirect(
     return { success: false, error: 'No Telegram chat ID for this contact' }
   }
 
+  const text = formatIMBody(payload.subject, payload.body)
+
   try {
     const response = await fetch(
       `https://api.telegram.org/bot${botToken}/sendMessage`,
@@ -60,7 +74,7 @@ async function sendTelegramDirect(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: payload.recipientTelegram,
-          text: payload.body,
+          text,
         }),
       }
     )
@@ -113,11 +127,16 @@ export async function firePabblyWebhook(
     return { success: true }
   }
 
+  // For IM channels routed through Pabbly, prepend subject into body
+  const outboundPayload = IM_CHANNELS.has(payload.channel)
+    ? { ...payload, body: formatIMBody(payload.subject, payload.body) }
+    : payload
+
   try {
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(outboundPayload),
     })
 
     if (!response.ok) {
