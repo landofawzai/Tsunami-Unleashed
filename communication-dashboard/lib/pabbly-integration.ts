@@ -1,5 +1,6 @@
-// Pabbly Connect Integration
-// Fires webhooks to Pabbly for message delivery via Gmail, Ubot Studio, Telegram Bot, etc.
+// Pabbly Connect Integration + Direct Channel Delivery
+// Fires webhooks to Pabbly for message delivery via Gmail, Ubot Studio, etc.
+// Channels with direct API support (Telegram) bypass Pabbly entirely.
 
 interface DeliveryPayload {
   broadcastId: string
@@ -27,26 +28,76 @@ interface PabblyResponse {
 const CHANNEL_WEBHOOK_VARS: Record<string, string> = {
   email: 'PABBLY_WEBHOOK_EMAIL',
   whatsapp: 'PABBLY_WEBHOOK_WHATSAPP',
-  telegram: 'PABBLY_WEBHOOK_TELEGRAM',
   signal: 'PABBLY_WEBHOOK_SIGNAL',
   sms: 'PABBLY_WEBHOOK_SMS',
   social_media: 'PABBLY_WEBHOOK_SOCIAL',
 }
 
+// Channels that use direct API calls instead of Pabbly
+const DIRECT_CHANNELS = ['telegram']
+
 /**
- * Fire a Pabbly webhook to deliver a message through a specific channel
- * Pabbly then routes to the appropriate tool (Gmail, Ubot Studio, Telegram Bot, etc.)
+ * Send a message directly via the Telegram Bot API
+ */
+async function sendTelegramDirect(
+  payload: DeliveryPayload
+): Promise<PabblyResponse> {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN
+  if (!botToken) {
+    console.log('[Telegram] TELEGRAM_BOT_TOKEN not set. Skipping.')
+    return { success: true }
+  }
+
+  if (!payload.recipientTelegram) {
+    return { success: false, error: 'No Telegram chat ID for this contact' }
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.telegram.org/bot${botToken}/sendMessage`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: payload.recipientTelegram,
+          text: payload.body,
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      return {
+        success: false,
+        error: `Telegram API error ${response.status}: ${(errorData as Record<string, unknown>).description || response.statusText}`,
+      }
+    }
+
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: `Telegram send failed: ${error}` }
+  }
+}
+
+/**
+ * Fire a delivery for a specific channel.
+ * Telegram uses direct API calls; all other channels route through Pabbly webhooks.
  */
 export async function firePabblyWebhook(
   payload: DeliveryPayload
 ): Promise<PabblyResponse> {
+  // Direct channel delivery (bypasses Pabbly)
+  if (payload.channel === 'telegram') {
+    return sendTelegramDirect(payload)
+  }
+
   const webhookVar = CHANNEL_WEBHOOK_VARS[payload.channel]
   if (!webhookVar) {
     return { success: false, error: `Unknown channel: ${payload.channel}` }
   }
 
   const webhookUrl = process.env[webhookVar]
-  if (!webhookUrl) {
+  if (!webhookUrl || webhookUrl.includes('PASTE-')) {
     // In development/testing, log the payload instead of sending
     console.log(
       `[Pabbly] No webhook URL for ${payload.channel} (${webhookVar} not set). Payload:`,
