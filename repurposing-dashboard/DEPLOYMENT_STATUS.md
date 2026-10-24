@@ -1,5 +1,7 @@
 # Deployment Status
 
+> **Access changed 2026-10-23: tailnet-only.** These dashboards have no login, so they no longer answer on the public internet. nginx allows only Tailscale addresses, and the Next.js apps listen on 127.0.0.1. Open them from a device on the tailnet at `http://computergecko:<nginx port>` (the distribution dashboard is `http://computergecko/`). The API keys that used to be written here were rotated the same day; the live values are only in each app's `.env` on the server. Never commit them.
+
 ## Production Deployment - Hetzner VPS
 
 **Status**: Successfully Deployed
@@ -24,7 +26,7 @@
 
 ```env
 DATABASE_URL="file:./prod.db"
-API_KEY="1dd28151385170d2740506511d072441ec0c6a12ae13cc4caa1ca6ae76e92a1b"
+API_KEY="<see the server's .env>"
 NODE_ENV="production"
 
 # AI & Processing (configure with real keys when ready)
@@ -43,7 +45,7 @@ PABBLY_WEBHOOK_TRANSLATION_READY=""
 
 # Distribution Dashboard integration (same server)
 DISTRIBUTION_WEBHOOK_URL="http://localhost:3000/api/webhooks/content-posted"
-DISTRIBUTION_API_KEY="e6adff367e6c06b045b9934e3be6b4f92cd39e281728a21cff6e49a0e0bf29b7"
+DISTRIBUTION_API_KEY="<see the server's .env>"
 ```
 
 **IMPORTANT**: The API key above is for Pabbly Connect webhook authentication. Store securely.
@@ -97,7 +99,7 @@ All webhook endpoints are accessible at: `http://5.78.183.112:3080/api/webhooks/
 POST http://5.78.183.112:3080/api/webhooks/source-content
 Headers:
   Content-Type: application/json
-  x-api-key: 1dd28151385170d2740506511d072441ec0c6a12ae13cc4caa1ca6ae76e92a1b
+  x-api-key: <see the server's .env>
 ```
 
 ### Job Complete Webhook
@@ -105,7 +107,7 @@ Headers:
 POST http://5.78.183.112:3080/api/webhooks/job-complete
 Headers:
   Content-Type: application/json
-  x-api-key: 1dd28151385170d2740506511d072441ec0c6a12ae13cc4caa1ca6ae76e92a1b
+  x-api-key: <see the server's .env>
 ```
 
 ### Translation Reviewed Webhook
@@ -113,7 +115,7 @@ Headers:
 POST http://5.78.183.112:3080/api/webhooks/translation-reviewed
 Headers:
   Content-Type: application/json
-  x-api-key: 1dd28151385170d2740506511d072441ec0c6a12ae13cc4caa1ca6ae76e92a1b
+  x-api-key: <see the server's .env>
 ```
 
 ---

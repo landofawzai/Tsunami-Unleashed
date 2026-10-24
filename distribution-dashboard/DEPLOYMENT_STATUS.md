@@ -1,5 +1,7 @@
 # Deployment Status
 
+> **Access changed 2026-10-23: tailnet-only.** These dashboards have no login, so they no longer answer on the public internet. nginx allows only Tailscale addresses, and the Next.js apps listen on 127.0.0.1. Open them from a device on the tailnet at `http://computergecko:<nginx port>` (the distribution dashboard is `http://computergecko/`). The API keys that used to be written here were rotated the same day; the live values are only in each app's `.env` on the server. Never commit them.
+
 ## Production Deployment - Hetzner VPS
 
 **Status**: ✅ Successfully Deployed
@@ -24,7 +26,7 @@
 
 ```env
 DATABASE_URL="file:./prod.db"
-API_KEY="e6adff367e6c06b045b9934e3be6b4f92cd39e281728a21cff6e49a0e0bf29b7"
+API_KEY="<see the server's .env>"
 NEXT_PUBLIC_BASE_URL="http://5.78.183.112"
 NODE_ENV="production"
 ```
@@ -65,7 +67,7 @@ All webhook endpoints are accessible at: `http://5.78.183.112/api/webhooks/`
 POST http://5.78.183.112/api/webhooks/content-posted
 Headers:
   Content-Type: application/json
-  x-api-key: e6adff367e6c06b045b9934e3be6b4f92cd39e281728a21cff6e49a0e0bf29b7
+  x-api-key: <see the server's .env>
 ```
 
 ### Content Failed Webhook
@@ -73,7 +75,7 @@ Headers:
 POST http://5.78.183.112/api/webhooks/content-failed
 Headers:
   Content-Type: application/json
-  x-api-key: e6adff367e6c06b045b9934e3be6b4f92cd39e281728a21cff6e49a0e0bf29b7
+  x-api-key: <see the server's .env>
 ```
 
 ---

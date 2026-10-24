@@ -1,5 +1,7 @@
 # Deployment Status
 
+> **Access changed 2026-10-23: tailnet-only.** These dashboards have no login, so they no longer answer on the public internet. nginx allows only Tailscale addresses, and the Next.js apps listen on 127.0.0.1. Open them from a device on the tailnet at `http://computergecko:<nginx port>` (the distribution dashboard is `http://computergecko/`). The API keys that used to be written here were rotated the same day; the live values are only in each app's `.env` on the server. Never commit them.
+
 ## Production Deployment - Hetzner VPS
 
 **Status**: Successfully Deployed
@@ -24,7 +26,7 @@
 
 ```env
 DATABASE_URL="file:./prod.db"
-API_KEY="7cf70c7a2972c1aa43ae919346b6798a9fcdd31da67d3f49405f85fe00ea15df"
+API_KEY="<see the server's .env>"
 NODE_ENV="production"
 
 # Anthropic API Key for AI channel adaptation and translation
@@ -92,7 +94,7 @@ All webhook endpoints are accessible at: `http://5.78.183.112:3081/api/webhooks/
 POST http://5.78.183.112:3081/api/webhooks/campaign-from-drive
 Headers:
   Content-Type: application/json
-  x-api-key: 7cf70c7a2972c1aa43ae919346b6798a9fcdd31da67d3f49405f85fe00ea15df
+  x-api-key: <see the server's .env>
 ```
 
 ### Delivery Status Webhook
@@ -100,7 +102,7 @@ Headers:
 POST http://5.78.183.112:3081/api/webhooks/delivery-status
 Headers:
   Content-Type: application/json
-  x-api-key: 7cf70c7a2972c1aa43ae919346b6798a9fcdd31da67d3f49405f85fe00ea15df
+  x-api-key: <see the server's .env>
 ```
 
 ### Sequence Trigger Webhook
@@ -108,7 +110,7 @@ Headers:
 POST http://5.78.183.112:3081/api/webhooks/sequence-trigger
 Headers:
   Content-Type: application/json
-  x-api-key: 7cf70c7a2972c1aa43ae919346b6798a9fcdd31da67d3f49405f85fe00ea15df
+  x-api-key: <see the server's .env>
 ```
 
 ---

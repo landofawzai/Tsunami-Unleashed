@@ -1,5 +1,7 @@
 # Content Creation Dashboard — Deployment Status
 
+> **Access changed 2026-10-23: tailnet-only.** These dashboards have no login, so they no longer answer on the public internet. nginx allows only Tailscale addresses, and the Next.js apps listen on 127.0.0.1. Open them from a device on the tailnet at `http://computergecko:<nginx port>` (the distribution dashboard is `http://computergecko/`). The API keys that used to be written here were rotated the same day; the live values are only in each app's `.env` on the server. Never commit them.
+
 ## Deployment Details
 
 | Property | Value |
@@ -10,7 +12,7 @@
 | **nginx Port** | 3082 |
 | **PM2 Name** | tsunami-creation |
 | **URL** | http://5.78.183.112:3082 |
-| **API Key** | cc624c181641b37824976c47716800752fe84dae8f02f5a6ad2c7248e6ab6b8b |
+| **API Key** | <see the server's .env> |
 | **Database** | SQLite (prisma/prod.db) |
 | **Deployed** | 2026-02-17 |
 
